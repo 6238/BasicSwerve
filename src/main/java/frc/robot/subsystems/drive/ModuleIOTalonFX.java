@@ -13,7 +13,7 @@
 
 package frc.robot.subsystems.drive;
 
-import static frc.robot.util.PhoenixUtil.*;
+import static frc.lib.penguincore.PhoenixUtil.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
@@ -42,6 +42,9 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import frc.lib.penguincore.AlertUtils;
 import frc.robot.util.RobotIdentity;
 import java.util.Queue;
 
@@ -100,6 +103,9 @@ public class ModuleIOTalonFX implements ModuleIO {
   // All signals for batch refresh
   private BaseStatusSignal[] signals;
 
+  private final Alert driveDisconnectedAlert;
+  private final Alert turnDisconnectedAlert;
+
   public ModuleIOTalonFX(
       SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
           constants) {
@@ -115,6 +121,17 @@ public class ModuleIOTalonFX implements ModuleIO {
     cancoder =
         new CANcoder(
             constants.EncoderId, RobotIdentity.getTunerConstants().DrivetrainConstants.CANBusName);
+
+    driveDisconnectedAlert =
+        new Alert(
+            "Module",
+            "Drive motor (ID " + constants.DriveMotorId + ") disconnected",
+            AlertType.kError);
+    turnDisconnectedAlert =
+        new Alert(
+            "Module",
+            "Turn motor (ID " + constants.SteerMotorId + ") disconnected",
+            AlertType.kError);
 
     // Configure drive motor
     var driveConfig = constants.DriveMotorInitialConfigs;
@@ -222,6 +239,7 @@ public class ModuleIOTalonFX implements ModuleIO {
 
     // Update drive inputs
     inputs.driveConnected = driveConnectedDebounce.calculate(drivePosition.getStatus().isOK());
+    AlertUtils.processCriticalAlert(driveDisconnectedAlert, !inputs.driveConnected);
     inputs.drivePositionRad = Units.rotationsToRadians(drivePosition.getValueAsDouble());
     inputs.driveVelocityRadPerSec = Units.rotationsToRadians(driveVelocity.getValueAsDouble());
     inputs.driveAppliedVolts = driveAppliedVolts.getValueAsDouble();
@@ -229,6 +247,7 @@ public class ModuleIOTalonFX implements ModuleIO {
 
     // Update turn inputs
     inputs.turnConnected = turnConnectedDebounce.calculate(turnPosition.getStatus().isOK());
+    AlertUtils.processCriticalAlert(turnDisconnectedAlert, !inputs.turnConnected);
     inputs.turnEncoderConnected =
         turnEncoderConnectedDebounce.calculate(turnAbsolutePosition.getStatus().isOK());
     inputs.turnAbsolutePosition = Rotation2d.fromRotations(turnAbsolutePosition.getValueAsDouble());

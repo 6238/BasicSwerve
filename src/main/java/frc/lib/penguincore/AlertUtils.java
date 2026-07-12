@@ -1,10 +1,10 @@
-package frc.robot.util;
+package frc.lib.penguincore;
 
 import edu.wpi.first.wpilibj.Alert;
 
 public class AlertUtils {
-  public static Runnable criticalErrorRumbleFunction;
-  public static Runnable stopRumbleFunction;
+  public static Runnable criticalErrorRumbleFunction = () -> {};
+  public static Runnable stopRumbleFunction = () -> {};
 
   public static void processAlert(Alert alert, boolean condition) {
     if (condition) {

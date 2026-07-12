@@ -1,13 +1,8 @@
 package frc.robot;
 
-import static frc.robot.subsystems.vision.VisionConstants.*;
-
-import edu.wpi.first.wpilibj.Alert;
-import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.auto.AutoRoutines;
 import frc.robot.commands.DriveCommands;
 import frc.robot.subsystems.drive.Drive;
@@ -17,10 +12,6 @@ import frc.robot.subsystems.drive.MapleSimSwerve;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
-import frc.robot.subsystems.vision.Vision;
-import frc.robot.subsystems.vision.VisionIO;
-import frc.robot.subsystems.vision.VisionIOPhotonVision;
-import frc.robot.subsystems.vision.VisionIOPhotonVisionSim;
 import frc.robot.util.RobotIdentity;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
@@ -29,7 +20,6 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 public class RobotContainer {
   // Subsystems
   private final Drive drive;
-  private final Vision vision;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -56,12 +46,6 @@ public class RobotContainer {
                 new ModuleIOTalonFX(RobotIdentity.getTunerConstants().BackLeft),
                 new ModuleIOTalonFX(RobotIdentity.getTunerConstants().BackRight),
                 swerveDriveSimulation);
-        vision =
-            new Vision(
-                drive::addVisionMeasurement,
-                drive::getPose,
-                new VisionIOPhotonVision(camera0Name, robotToCamera0),
-                new VisionIOPhotonVision(camera1Name, robotToCamera1));
         break;
 
       case SIM:
@@ -75,16 +59,6 @@ public class RobotContainer {
                 new ModuleIOSim(swerveDriveSimulation.getModules()[2]),
                 new ModuleIOSim(swerveDriveSimulation.getModules()[3]),
                 swerveDriveSimulation);
-        vision =
-            new Vision(
-                drive::addVisionMeasurement,
-                drive::getPose,
-                new VisionIOPhotonVisionSim(
-                    camera0Name, robotToCamera0, swerveDriveSimulation::getSimulatedDriveTrainPose),
-                new VisionIOPhotonVisionSim(
-                    camera1Name,
-                    robotToCamera1,
-                    swerveDriveSimulation::getSimulatedDriveTrainPose));
         break;
 
       default:
@@ -96,36 +70,10 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 swerveDriveSimulation);
-        vision = new Vision(drive::addVisionMeasurement, drive::getPose, new VisionIO() {});
         break;
     }
 
-    // Set up auto routines
-    LoggedDashboardChooser<Command> tempChooser;
-    try {
-      AutoRoutines autoRoutines = new AutoRoutines(drive);
-      tempChooser = new LoggedDashboardChooser<>("Auto Choices", autoRoutines.buildAutoChooser());
-      tempChooser.addOption(
-          "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
-      tempChooser.addOption(
-          "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
-      tempChooser.addOption(
-          "Drive SysId (Quasistatic Forward)",
-          drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
-      tempChooser.addOption(
-          "Drive SysId (Quasistatic Reverse)",
-          drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-      tempChooser.addOption(
-          "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
-      tempChooser.addOption(
-          "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
-    } catch (Exception e) {
-      e.printStackTrace();
-      Alert alert = new Alert("auto failed to load", AlertType.kError);
-      alert.set(true);
-      tempChooser = new LoggedDashboardChooser<Command>("Auto Choices");
-    }
-    autoChooser = tempChooser;
+    autoChooser = AutoRoutines.buildDashboardChooser(drive);
 
     configureButtonBindings();
   }

@@ -41,7 +41,7 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 public class DriveCommands {
-  public static final double DEADBAND = 0.07;
+  public static final double DEADBAND = 0.12;
   public static final double ANGLE_KP = 5.3;
   public static final double ANGLE_KD = 0.1;
   public static final double ANGLE_MAX_VELOCITY = 20.0;
@@ -55,7 +55,7 @@ public class DriveCommands {
   // output(x) = (CENTER_SENS * x + (MAX_RATE - CENTER_SENS) * x^EXPO) / MAX_RATE
   // where x ∈ [0,1] is post-deadband stick magnitude and output ∈ [0,1].
   public static final double CURVE_CENTER_SENS = 1.2;
-  public static final double CURVE_MAX_RATE = 0.8;
+  public static final double CURVE_MAX_RATE = 0.3;
   public static final double CURVE_EXPO = 3.0;
 
   /**

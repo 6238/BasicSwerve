@@ -5,7 +5,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import frc.robot.generated.COMPTunerConstants;
-import frc.robot.generated.PRACTICETunerConstants;
+import frc.robot.generated.PracticeTunerConstants;
 import frc.robot.generated.RobotTunerConstants;
 import org.littletonrobotics.junction.Logger;
 
@@ -32,7 +32,7 @@ public class RobotIdentity {
         return RobotType.PRACTICE_BOT;
       default:
         serialNumberAlert.set(true);
-        return RobotType.COMP_BOT;
+        return RobotType.PRACTICE_BOT;
     }
   }
 
@@ -73,11 +73,11 @@ public class RobotIdentity {
 
   private static RobotTunerConstants fromPractice() {
     return new RobotTunerConstants(
-        PRACTICETunerConstants.DrivetrainConstants,
-        PRACTICETunerConstants.FrontLeft,
-        PRACTICETunerConstants.FrontRight,
-        PRACTICETunerConstants.BackLeft,
-        PRACTICETunerConstants.BackRight,
-        PRACTICETunerConstants.kSpeedAt12Volts);
+        PracticeTunerConstants.DrivetrainConstants,
+        PracticeTunerConstants.FrontLeft,
+        PracticeTunerConstants.FrontRight,
+        PracticeTunerConstants.BackLeft,
+        PracticeTunerConstants.BackRight,
+        PracticeTunerConstants.kSpeedAt12Volts);
   }
 }

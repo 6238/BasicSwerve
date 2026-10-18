@@ -25,6 +25,7 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -36,14 +37,14 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
   public static final double DEADBAND = 0.12;
-  public static final double ANGLE_KP = 5.3;
-  public static final double ANGLE_KD = 0.1;
+  public static final double ANGLE_KP = 3;
+  public static final double ANGLE_KD = 0;
   public static final double ANGLE_MAX_VELOCITY = 20.0;
   public static final double ANGLE_MAX_ACCELERATION = 50.0;
   public static final double FF_START_DELAY = 2.0; // Secs
@@ -205,71 +206,38 @@ public class DriveCommands {
         drive);
   }
 
-  /**
-   * Field relative drive command using joystick for linear control and PID for angular control.
-   * Possible use cases include snapping to an angle, aiming at a vision target, or controlling
-   * absolute rotation with a joystick.
-   */
   public static Command joystickDriveAtAngle(
       Drive drive,
       DoubleSupplier xSupplier,
       DoubleSupplier ySupplier,
+      DoubleSupplier rightXSupplier,
+      DoubleSupplier rightYSupplier,
       Supplier<Rotation2d> rotationSupplier) {
-    return joystickDriveAtAngle(drive, xSupplier, ySupplier, rotationSupplier, () -> true);
-  }
 
-  public static Command joystickDriveAtAngle(
-      Drive drive,
-      DoubleSupplier xSupplier,
-      DoubleSupplier ySupplier,
-      Supplier<Rotation2d> rotationSupplier,
-      BooleanSupplier enableXLock) {
-
-    // Create PID controller
-    ProfiledPIDController angleController =
+    ProfiledPIDController pidController =
         new ProfiledPIDController(
-            ANGLE_KP,
-            0.1,
-            ANGLE_KD,
-            new TrapezoidProfile.Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
-    angleController.enableContinuousInput(-Math.PI, Math.PI);
+            ANGLE_KP, 0, ANGLE_KD, new Constraints(ANGLE_MAX_VELOCITY, ANGLE_MAX_ACCELERATION));
+    pidController.enableContinuousInput(-Math.PI, Math.PI);
 
-    // Construct command
-    boolean[] xLockActive = {false};
     return Commands.run(
             () -> {
               // Get linear velocity
               Translation2d linearVelocity =
                   getLinearVelocityFromJoysticks(xSupplier.getAsDouble(), ySupplier.getAsDouble());
 
-              // Calculate angular speed
-              double omega =
-                  angleController.calculate(
-                      drive.getRotation().getRadians(), rotationSupplier.get().getRadians());
+              double angleTarget =
+                  Math.atan2(-rightXSupplier.getAsDouble(), -rightYSupplier.getAsDouble());
+              double currentAngle = rotationSupplier.get().getRadians();
 
-              // X-lock with hysteresis: engage at <0.75°, disengage at >2° or when moving
-              double rotationErrorDeg =
-                  Math.abs(drive.getRotation().getDegrees() - rotationSupplier.get().getDegrees());
-              if (enableXLock.getAsBoolean()) {
-                if (linearVelocity.getNorm() <= 0.1 && rotationErrorDeg < 1.00) {
-                  xLockActive[0] = true;
-                } else if (linearVelocity.getNorm() >= 0.1 || rotationErrorDeg > 2.75) {
-                  xLockActive[0] = false;
-                }
-              } else {
-                xLockActive[0] = false;
-              }
-              if (xLockActive[0]) {
-                drive.stopWithX();
-                return;
-              }
+              Logger.recordOutput("CurrentHeading", currentAngle);
+              Logger.recordOutput("TargetHeading", angleTarget);
 
               // Convert to field relative speeds & send command
               ChassisSpeeds speeds =
                   new ChassisSpeeds(
                       linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
                       linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
-                      omega);
+                      pidController.calculate(currentAngle, angleTarget));
               boolean isFlipped =
                   DriverStation.getAlliance().isPresent()
                       && DriverStation.getAlliance().get() == Alliance.Red;
@@ -281,12 +249,8 @@ public class DriveCommands {
                           : drive.getRotation()));
             },
             drive)
-
-        // Reset PID controller and limiters when command starts
         .beforeStarting(
-            () -> {
-              angleController.reset(drive.getRotation().getRadians());
-            });
+            Commands.runOnce(() -> pidController.reset(drive.getRotation().getRadians())));
   }
 
   /**

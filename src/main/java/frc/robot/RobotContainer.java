@@ -83,7 +83,7 @@ public class RobotContainer {
         DriveCommands.joystickDrive(
             drive,
             () -> controller.getLeftY(),
-            () -> -controller.getLeftX(),
+            () -> controller.getLeftX(),
             () -> -controller.getRightX()));
 
     controller
@@ -102,6 +102,17 @@ public class RobotContainer {
 
     // X-lock wheels
     controller.x().whileTrue(Commands.run(drive::stopWithX, drive));
+
+    controller
+        .leftBumper()
+        .whileTrue(
+            DriveCommands.joystickDriveAtAngle(
+                drive,
+                () -> controller.getLeftY(),
+                () -> controller.getLeftX(),
+                () -> controller.getRightX(),
+                () -> controller.getRightY(),
+                () -> drive.getRotation()));
   }
 
   public Command getAutonomousCommand() {

@@ -43,7 +43,7 @@ import org.littletonrobotics.junction.Logger;
 
 public class DriveCommands {
   public static final double DEADBAND = 0.12;
-  public static final double ANGLE_KP = 3;
+  public static final double ANGLE_KP = 5.25;
   public static final double ANGLE_KD = 0;
   public static final double ANGLE_MAX_VELOCITY = 20.0;
   public static final double ANGLE_MAX_ACCELERATION = 50.0;
